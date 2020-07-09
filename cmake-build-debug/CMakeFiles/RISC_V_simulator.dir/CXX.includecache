@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/hanchong/CLionProjects/RISC-V simulator/main.cpp
+iostream
+-
+sstream
+-
+string
+-
+cstring
+-
+bitset
+-
+riscv.hpp
+C:/Users/hanchong/CLionProjects/RISC-V simulator/riscv.hpp
+
+C:/Users/hanchong/CLionProjects/RISC-V simulator/riscv.hpp
+iostream
+-
+sstream
+-
+string
+-
+cstring
+-
+bitset
+-
+
