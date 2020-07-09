@@ -110,17 +110,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named RISC_V_simulator
+# Target rules for targets named code
 
 # Build rule for target.
-RISC_V_simulator: cmake_check_build_system
-	$(MAKE) -f CMakeFiles\Makefile2 RISC_V_simulator
-.PHONY : RISC_V_simulator
+code: cmake_check_build_system
+	$(MAKE) -f CMakeFiles\Makefile2 code
+.PHONY : code
 
 # fast build rule for target.
-RISC_V_simulator/fast:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/build
-.PHONY : RISC_V_simulator/fast
+code/fast:
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/build
+.PHONY : code/fast
 
 main.obj: main.cpp.obj
 
@@ -128,7 +128,7 @@ main.obj: main.cpp.obj
 
 # target to build an object file
 main.cpp.obj:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/main.cpp.obj
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/main.cpp.obj
 .PHONY : main.cpp.obj
 
 main.i: main.cpp.i
@@ -137,7 +137,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/main.cpp.i
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -146,7 +146,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/main.cpp.s
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 # Help Target
@@ -155,7 +155,7 @@ help:
 	@echo ... all (the default if no target is provided)
 	@echo ... clean
 	@echo ... depend
-	@echo ... RISC_V_simulator
+	@echo ... code
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... main.obj

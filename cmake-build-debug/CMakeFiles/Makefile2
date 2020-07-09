@@ -52,12 +52,12 @@ CMAKE_BINARY_DIR = "C:\Users\hanchong\CLionProjects\RISC-V simulator\cmake-build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/RISC_V_simulator.dir/all
+all: CMakeFiles/code.dir/all
 
 .PHONY : all
 
 # The main recursive "clean" target.
-clean: CMakeFiles/RISC_V_simulator.dir/clean
+clean: CMakeFiles/code.dir/clean
 
 .PHONY : clean
 
@@ -67,31 +67,31 @@ preinstall:
 .PHONY : preinstall
 
 #=============================================================================
-# Target rules for target CMakeFiles/RISC_V_simulator.dir
+# Target rules for target CMakeFiles/code.dir
 
 # All Build rule for target.
-CMakeFiles/RISC_V_simulator.dir/all:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/depend
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir="C:\Users\hanchong\CLionProjects\RISC-V simulator\cmake-build-debug\CMakeFiles" --progress-num=1,2 "Built target RISC_V_simulator"
-.PHONY : CMakeFiles/RISC_V_simulator.dir/all
+CMakeFiles/code.dir/all:
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/depend
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir="C:\Users\hanchong\CLionProjects\RISC-V simulator\cmake-build-debug\CMakeFiles" --progress-num=1,2 "Built target code"
+.PHONY : CMakeFiles/code.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/RISC_V_simulator.dir/rule: cmake_check_build_system
+CMakeFiles/code.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\hanchong\CLionProjects\RISC-V simulator\cmake-build-debug\CMakeFiles" 2
-	$(MAKE) -f CMakeFiles\Makefile2 CMakeFiles/RISC_V_simulator.dir/all
+	$(MAKE) -f CMakeFiles\Makefile2 CMakeFiles/code.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\hanchong\CLionProjects\RISC-V simulator\cmake-build-debug\CMakeFiles" 0
-.PHONY : CMakeFiles/RISC_V_simulator.dir/rule
+.PHONY : CMakeFiles/code.dir/rule
 
 # Convenience name for target.
-RISC_V_simulator: CMakeFiles/RISC_V_simulator.dir/rule
+code: CMakeFiles/code.dir/rule
 
-.PHONY : RISC_V_simulator
+.PHONY : code
 
 # clean rule for target.
-CMakeFiles/RISC_V_simulator.dir/clean:
-	$(MAKE) -f CMakeFiles\RISC_V_simulator.dir\build.make CMakeFiles/RISC_V_simulator.dir/clean
-.PHONY : CMakeFiles/RISC_V_simulator.dir/clean
+CMakeFiles/code.dir/clean:
+	$(MAKE) -f CMakeFiles\code.dir\build.make CMakeFiles/code.dir/clean
+.PHONY : CMakeFiles/code.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

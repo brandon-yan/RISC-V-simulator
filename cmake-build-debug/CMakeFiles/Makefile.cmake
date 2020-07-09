@@ -53,5 +53,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/RISC_V_simulator.dir/DependInfo.cmake"
+  "CMakeFiles/code.dir/DependInfo.cmake"
   )
