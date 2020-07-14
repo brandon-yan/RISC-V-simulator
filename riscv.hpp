@@ -19,11 +19,14 @@ enum Insttype {
     ADD, SUB, SLL, SLT, SLTU, XOR, SRL, SRA, OR, AND,        //R-type
     BEQ, BNE, BLT, BGE, BLTU, BGEU,                          //B-type
     SB, SH, SW,                                              //S-type
+    NOP, START
 };
 
 unsigned char memory[0x20000];
 int regi[32];
-unsigned int pc = 0, tmppc = 0;
+unsigned int pc = 0;
+bool ifrun = true;
+int cnt = 0;
 
 int get_num(int inst, int l, int r) {
     int ret = ((inst >> l) & (1 << (r - l + 1)) - 1);
@@ -31,16 +34,21 @@ int get_num(int inst, int l, int r) {
 }
 struct instcode {
     int inst = 0;
-    unsigned int rs1 = 0;
-    unsigned int rs2 = 0;
-    unsigned int rd = 0;
+    int rs1 = -1;
+    int rs2 = -1;
+    int rd = -1;
     int imm = 0;
     int shamt = 0;
     int value = 0;
     int addr = 0;
-    //int reg[5] = {0};    // 0 for value, 1 for rs1, 2 for rs2, 3 for rd
-    Insttype type;
+    bool ifjump = false;
+//    int curpc = 0;
+    Insttype type = START;
+//    void clear() {
+//        inst = 0, rs1 = -1, rs2 = -1, rd = -1, imm = 0, shamt = 0, value = 0, addr = 0, ifjump = false, type = NOP;
+//    }
 };
+instcode IF_ID, ID_EX, EX_MEM, MEM_WB;
 
 int get_U_imm (const int &inst) {
     int ret = get_num(inst, 12, 31);
@@ -94,17 +102,23 @@ int get_S_imm (const int &inst) {
     return ret;
 };
 
-void IF(instcode &obj) {
-    //obj.inst = memory[pc] + (memory[pc + 1] << 8) + (memory[pc + 2] << 16) + (memory[pc + 3] << 24);
-    obj.inst = *((unsigned int*)(memory + pc));
-    tmppc = pc + 4;
+void IF() {
+    int inst = *((unsigned int*)(memory + pc));
+    pc += 4;
+    IF_ID.inst = inst;
+//    IF_ID.curpc = pc;
 }
 
-void ID(instcode &obj) {
+void ID(instcode obj) {
     int inst = obj.inst;
     int opcode = inst & 127;
     int funct3 = get_num(inst, 12, 14);
     int funct7 = get_num(inst, 25, 31);
+    if (IF_ID.type == NOP) {
+        IF_ID.type = START;
+        ID_EX.type = NOP;
+        return;
+    }
     switch (opcode) {
         case 55:
             obj.type = LUI;
@@ -117,12 +131,10 @@ void ID(instcode &obj) {
         case 111:
             obj.type = JAL;
             obj.rd = get_num(inst, 7, 11);
-            //            if (obj.rd == 0) obj.rd = 1;
             obj.imm = get_J_imm(inst); break;
         case 103:
             obj.type = JALR;
             obj.rd = get_num(inst, 7, 11);
-            //            if (obj.rd == 0) obj.rd = 1;
             obj.imm = get_I_imm(inst);
             obj.rs1 = get_num(inst, 15, 19); break;
         case 99:
@@ -318,47 +330,65 @@ void ID(instcode &obj) {
                     } break;
             } break;
     }
+    ID_EX = obj;
 }
 
-void EX(instcode &obj) {
+void EX(instcode obj) {
     switch (obj.type) {
+        case NOP:
+        case START:
+            break;
         case LUI:
             obj.value = obj.imm;
             break;
         case AUIPC:
-            obj.value = obj.imm + pc;
+            obj.value = obj.imm + pc - 4;
             break;
         case JAL:
-            obj.value = pc + 4;
-            pc += obj.imm;
+            obj.value = pc;
+            pc = pc + obj.imm - 4;
+            EX_MEM.ifjump = true;
             break;
         case JALR:
-            obj.value = pc + 4;
+            obj.value = pc;
             pc = (regi[obj.rs1] + obj.imm) & ~1;
+            EX_MEM.ifjump = true;
             break;
         case BEQ:
-            if (regi[obj.rs1] == regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if (regi[obj.rs1] == regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case BNE:
-            if (regi[obj.rs1] != regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if (regi[obj.rs1] != regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case BLT:
-            if (regi[obj.rs1] < regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if (regi[obj.rs1] < regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case BGE:
-            if (regi[obj.rs1] >= regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if (regi[obj.rs1] >= regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case BLTU:
-            if ((unsigned int)regi[obj.rs1] < (unsigned int)regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if ((unsigned int)regi[obj.rs1] < (unsigned int)regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case BGEU:
-            if ((unsigned int)regi[obj.rs1] >= (unsigned int)regi[obj.rs2]) pc += obj.imm;
-            else pc = tmppc;
+            if ((unsigned int)regi[obj.rs1] >= (unsigned int)regi[obj.rs2]) {
+                EX_MEM.ifjump = true;
+                pc = pc + obj.imm - 4;
+            }
             break;
         case LB:
         case LH:
@@ -428,9 +458,15 @@ void EX(instcode &obj) {
             obj.value = regi[obj.rs1] & regi[obj.rs2];
             break;
     }
+    EX_MEM.inst = obj.inst, EX_MEM.rs1 = obj.rs1, EX_MEM.rs2 = obj.rs2, EX_MEM.rd = obj.rd,
+    EX_MEM.shamt = obj.shamt, EX_MEM.value = obj.value, EX_MEM.addr = obj.addr, EX_MEM.type = obj.type;
+//    EX_MEM.curpc = pc;
 }
 
-void MEM(instcode &obj) {
+void MEM(instcode obj) {
+//    if (ifrun == false)
+//        if (cnt != 2) ++cnt;
+//        else return;
     switch(obj.type) {
         case LB:
             obj.value = *((int8_t*)(memory + obj.addr));
@@ -459,9 +495,12 @@ void MEM(instcode &obj) {
         default:
             break;
     }
+    MEM_WB = obj;
+//    EX_MEM.clear();
 }
 
-void WB(instcode &obj) {
+void WB(instcode obj) {
+//    if (ifrun == false) ++cnt;
     switch (obj.type) {
         case LB:
         case LH:
@@ -489,18 +528,13 @@ void WB(instcode &obj) {
         case SLTI:
         case SLTU:
         case SLTIU:
-            pc = tmppc;
-            if (obj.rd != 0) regi[obj.rd] = obj.value;
-            break;
         case JAL:
         case JALR:
-            if (obj.rd != 0 ) regi[obj.rd] = obj.value;
+            if (obj.rd != 0) regi[obj.rd] = obj.value;
             break;
-        case SW:
-        case SB:
-        case SH:
-            pc = tmppc;
+        default:
             break;
     }
+//    MEM_WB.clear();
 }
 #endif //RISC_V_SIMULATOR_RISCV_HPP
