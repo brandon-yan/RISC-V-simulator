@@ -8,7 +8,7 @@
 
 int main() {
 //    int rrr10;
-//    freopen("C:\\Users\\hanchong\\Desktop\\RISC-V\\riscv-testcases\\testcases\\qsort.data", "r", stdin);
+//    freopen("C:\\Users\\hanchong\\Desktop\\RISC-V\\riscv-testcases\\testcases\\heart.data", "r", stdin);
 //    freopen("C:\\Users\\hanchong\\Desktop\\RISC-V\\riscv-testcases\\testcases\\answer.txt", "w", stdout);
     int pos = 0, tmp;
     std::string buffer;
@@ -52,12 +52,12 @@ int main() {
         }
 //        rrr10 = regi[10];
         if (!ifmem) WB(MEM_WB);
-//        if (regi[10] != rrr10) std::cout << MEM_WB.inspc << " " << regi[10] << std::endl; //++times;
+    //    if (regi[10] != rrr10)
+    //        std::cout << MEM_WB.inspc << " " << regi[10] << std::endl; //++times;
 //        if (times > 51100)
 //            std::cout << MEM_WB.inst << std::endl;
         MEM(EX_MEM);
         if (ifrun && (!ifmem)) EX(ID_EX);
-
         if (ifrun && (!ifmem)) ID(IF_ID);
         if (ifrun && (!ifmem)) IF();
 

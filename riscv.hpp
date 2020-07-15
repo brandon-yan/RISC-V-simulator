@@ -158,7 +158,7 @@ void IF() {
 }
 
 void ID(instcode obj) {
-    if (!ifpredict) return;
+    if ((!ifpredict) || EX_MEM.ifjump) return;
     int inst = obj.inst;
     int opcode = inst & 127;
     int funct3 = get_num(inst, 12, 14);
