@@ -25,8 +25,8 @@ enum Insttype {
 unsigned char memory[0x20000];
 int regi[32];
 unsigned int pc = 0;
-bool ifrun = true;
-int cnt = 0;
+bool ifrun = true, ifmem = false, ifpredict = true;
+int datacnt = 0, memcnt = 0;
 
 int get_num(int inst, int l, int r) {
     int ret = ((inst >> l) & (1 << (r - l + 1)) - 1);
@@ -41,14 +41,62 @@ struct instcode {
     int shamt = 0;
     int value = 0;
     int addr = 0;
+    int inspc = 0;
     bool ifjump = false;
-//    int curpc = 0;
     Insttype type = START;
-//    void clear() {
-//        inst = 0, rs1 = -1, rs2 = -1, rd = -1, imm = 0, shamt = 0, value = 0, addr = 0, ifjump = false, type = NOP;
-//    }
+    void clear() {
+        inst = 0, rs1 = -1, rs2 = -1, rd = -1, imm = 0, shamt = 0, value = 0, addr = 0, inspc = 0, ifjump = false, type = NOP;
+    }
+
 };
 instcode IF_ID, ID_EX, EX_MEM, MEM_WB;
+
+struct predictor {
+    int count = 0;               //00 01 for notjump, 10 11 for jump
+    bool ifjump = false;         //true for jump, false for notjump
+    bool ifright(bool ifju) {
+        if (count == 0) {
+            if (ifju) {
+                count = 1;
+                ifjump = false;
+                return false;
+            }
+            return true;
+        }
+        else if (count == 1) {
+            if (ifju) {
+                count = 3;
+                ifjump = true;
+                return false;
+            }
+            else {
+                count = 0;
+                ifjump = false;
+                return true;
+            }
+        }
+        else if (count == 2) {
+            if (ifju) {
+                count = 3;
+                ifjump = true;
+                return true;
+            }
+            else {
+                count = 0;
+                ifjump = false;
+                return false;
+            }
+        }
+        else if (count == 3) {
+            if (!ifju) {
+                count = 2;
+                ifjump = true;
+                return false;
+            }
+            return true;
+        }
+    };
+}predi[100];
 
 int get_U_imm (const int &inst) {
     int ret = get_num(inst, 12, 31);
@@ -104,12 +152,13 @@ int get_S_imm (const int &inst) {
 
 void IF() {
     int inst = *((unsigned int*)(memory + pc));
+    IF_ID.inspc = pc;
     pc += 4;
     IF_ID.inst = inst;
-//    IF_ID.curpc = pc;
 }
 
 void ID(instcode obj) {
+    if (!ifpredict) return;
     int inst = obj.inst;
     int opcode = inst & 127;
     int funct3 = get_num(inst, 12, 14);
@@ -117,6 +166,7 @@ void ID(instcode obj) {
     if (IF_ID.type == NOP) {
         IF_ID.type = START;
         ID_EX.type = NOP;
+        ID_EX.inst = 0;
         return;
     }
     switch (opcode) {
@@ -131,7 +181,9 @@ void ID(instcode obj) {
         case 111:
             obj.type = JAL;
             obj.rd = get_num(inst, 7, 11);
-            obj.imm = get_J_imm(inst); break;
+            obj.imm = get_J_imm(inst);
+            pc = obj.inspc + obj.imm;
+            ID_EX.ifjump = true; break;
         case 103:
             obj.type = JALR;
             obj.rd = get_num(inst, 7, 11);
@@ -143,32 +195,56 @@ void ID(instcode obj) {
                     obj.type = BEQ;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
                 case 1:
                     obj.type = BNE;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
                 case 4:
                     obj.type = BLT;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
                 case 5:
                     obj.type = BGE;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
                 case 6:
                     obj.type = BLTU;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
                 case 7:
                     obj.type = BGEU;
                     obj.rs1 = get_num(inst, 15, 19);
                     obj.rs2 = get_num(inst, 20, 24);
-                    obj.imm = get_B_imm(inst); break;
+                    obj.imm = get_B_imm(inst);
+                    if (predi[obj.inspc & 63].ifjump) {
+                        pc = obj.inspc + obj.imm;
+                        ID_EX.ifjump = true;
+                    } break;
             } break;
         case 3:
             switch (funct3) {
@@ -330,66 +406,100 @@ void ID(instcode obj) {
                     } break;
             } break;
     }
-    ID_EX = obj;
+    ID_EX.inst = obj.inst, ID_EX.rs1 = obj.rs1, ID_EX.rs2 = obj.rs2, ID_EX.rd = obj.rd,
+    ID_EX.shamt = obj.shamt, ID_EX.value = obj.value, ID_EX.addr = obj.addr, ID_EX.type = obj.type,
+    ID_EX.inspc = obj.inspc, ID_EX.imm = obj.imm;
 }
 
 void EX(instcode obj) {
     switch (obj.type) {
         case NOP:
+            obj.inst = 0;
+            break;
         case START:
             break;
         case LUI:
             obj.value = obj.imm;
             break;
         case AUIPC:
-            obj.value = obj.imm + pc - 4;
+            obj.value = obj.imm + obj.inspc;
             break;
         case JAL:
-            obj.value = pc;
-            pc = pc + obj.imm - 4;
-            EX_MEM.ifjump = true;
+            obj.value = obj.inspc + 4;
+//            pc = pc + obj.imm - 4;
+//            EX_MEM.ifjump = true;
             break;
         case JALR:
-            obj.value = pc;
+            obj.value = obj.inspc + 4;
             pc = (regi[obj.rs1] + obj.imm) & ~1;
             EX_MEM.ifjump = true;
             break;
         case BEQ:
             if (regi[obj.rs1] == regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case BNE:
             if (regi[obj.rs1] != regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case BLT:
             if (regi[obj.rs1] < regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case BGE:
             if (regi[obj.rs1] >= regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case BLTU:
             if ((unsigned int)regi[obj.rs1] < (unsigned int)regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case BGEU:
             if ((unsigned int)regi[obj.rs1] >= (unsigned int)regi[obj.rs2]) {
-                EX_MEM.ifjump = true;
-                pc = pc + obj.imm - 4;
+//                EX_MEM.ifjump = true;
+//                pc = pc + obj.imm - 4;
+                ifpredict = predi[obj.inspc & 63].ifright(true);
+                if (!ifpredict) pc = obj.inspc + obj.imm;
             }
-            break;
+            else {
+                ifpredict = predi[obj.inspc & 63].ifright(false);
+                if (!ifpredict) pc = obj.inspc + 4;
+            } break;
         case LB:
         case LH:
         case LW:
@@ -459,14 +569,19 @@ void EX(instcode obj) {
             break;
     }
     EX_MEM.inst = obj.inst, EX_MEM.rs1 = obj.rs1, EX_MEM.rs2 = obj.rs2, EX_MEM.rd = obj.rd,
-    EX_MEM.shamt = obj.shamt, EX_MEM.value = obj.value, EX_MEM.addr = obj.addr, EX_MEM.type = obj.type;
-//    EX_MEM.curpc = pc;
+    EX_MEM.shamt = obj.shamt, EX_MEM.value = obj.value, EX_MEM.addr = obj.addr, EX_MEM.type = obj.type,
+    EX_MEM.inspc = obj.inspc, EX_MEM.imm = obj.imm;
 }
 
 void MEM(instcode obj) {
-//    if (ifrun == false)
-//        if (cnt != 2) ++cnt;
-//        else return;
+    if (obj.type == LB || obj.type == LH || obj.type == LW || obj.type == LBU || obj.type == LHU || obj.type == SB || obj.type == SH || obj.type == SW) {
+        ++memcnt;
+        if (memcnt % 3) {
+            ifmem = true;
+            return;
+        }
+        else ifmem = false;
+    }
     switch(obj.type) {
         case LB:
             obj.value = *((int8_t*)(memory + obj.addr));
@@ -496,11 +611,9 @@ void MEM(instcode obj) {
             break;
     }
     MEM_WB = obj;
-//    EX_MEM.clear();
 }
 
 void WB(instcode obj) {
-//    if (ifrun == false) ++cnt;
     switch (obj.type) {
         case LB:
         case LH:
@@ -535,6 +648,5 @@ void WB(instcode obj) {
         default:
             break;
     }
-//    MEM_WB.clear();
 }
 #endif //RISC_V_SIMULATOR_RISCV_HPP
