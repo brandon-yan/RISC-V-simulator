@@ -7,7 +7,6 @@
 
 
 int main() {
-//    int rrr10;
 //    freopen("C:\\Users\\hanchong\\Desktop\\RISC-V\\riscv-testcases\\testcases\\heart.data", "r", stdin);
 //    freopen("C:\\Users\\hanchong\\Desktop\\RISC-V\\riscv-testcases\\testcases\\answer.txt", "w", stdout);
     int pos = 0, tmp;
@@ -50,12 +49,7 @@ int main() {
                     ++datacnt;
                 }
         }
-//        rrr10 = regi[10];
         if (!ifmem) WB(MEM_WB);
-    //    if (regi[10] != rrr10)
-    //        std::cout << MEM_WB.inspc << " " << regi[10] << std::endl; //++times;
-//        if (times > 51100)
-//            std::cout << MEM_WB.inst << std::endl;
         MEM(EX_MEM);
         if (ifrun && (!ifmem)) EX(ID_EX);
         if (ifrun && (!ifmem)) ID(IF_ID);
@@ -65,8 +59,6 @@ int main() {
             EX_MEM.ifjump = false;
             ifpredict = true;
             pc = IF_ID.inspc;
-//            IF_ID.type = NOP;
-//            ID_EX.type = NOP;
             IF_ID.clear();
             ID_EX.clear();
         }
@@ -74,7 +66,6 @@ int main() {
             ID_EX.ifjump = false;
             pc = IF_ID.inspc;
             IF_ID.clear();
-//            IF_ID.type = NOP;
         }
     }
     std::cout << (((unsigned int)regi[10]) & 255u) << std::endl;
